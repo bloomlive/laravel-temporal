@@ -3,22 +3,22 @@
 namespace Bloomlive\LaravelTemporal;
 
 use Illuminate\Database\Schema\Blueprint;
-use Spatie\LaravelPackageTools\Package;
-use Spatie\LaravelPackageTools\PackageServiceProvider;
+use Illuminate\Support\ServiceProvider;
 
-class LaravelTemporalServiceProvider extends PackageServiceProvider
+class LaravelTemporalServiceProvider extends ServiceProvider
 {
-    public function register() {
+    public function register()
+    {
         Blueprint::macro('temporal', function ($fromColumn = null, $toColumn = null) {
             $this->timestamp($fromColumn ?: config('temporal.database.from_column'));
             $this->timestamp($toColumn ?: config('temporal.database.to_column'));
         });
     }
 
-    public function configurePackage(Package $package): void
+    public function configurePackage(): void
     {
-        $package
-            ->name('laravel-temporal')
-            ->hasConfigFile();
+        $this->publishes([
+            __DIR__ . '/config/temporal.php' => config_path('temporal.php'),
+        ]);
     }
 }
