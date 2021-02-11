@@ -39,6 +39,12 @@ trait IsTemporal
 
     public function scopeWasValidAt(Builder $query, Carbon $timestamp)
     {
+        return $query
+            ->withoutGlobalScopes()
+            ->where($this->getValidToTimeColumn(), '>=', $timestamp)
+            ->orWhere($this->getValidToTimeColumn(), '=', null)
+    public function scopeWasValidAt(Builder $query, Carbon $timestamp)
+    {
         return $query->withoutGlobalScope(TemporalCurrentlyValidScope::class)
             ->where(function ($query) use ($timestamp) {
                 $query->where($this->getValidToTimeColumn(), '>=', $timestamp)
@@ -50,7 +56,7 @@ trait IsTemporal
 
     public function invalidate(Carbon $since = null)
     {
-        if (!$this->isCurrentlyValid()) {
+        if (! $this->isCurrentlyValid()) {
             throw new TemporalNotCurrentlyValidException();
         }
 
@@ -80,7 +86,7 @@ trait IsTemporal
     {
         static::addGlobalScope(new \Bloomlive\LaravelTemporal\Scopes\TemporalCurrentlyValidScope);
 
-        static::creating(function(self $model) {
+        static::creating(function (self $model) {
             $current = $model->where($model->secondaryKey(), '=', $model[$model->secondaryKey()])->first();
 
             $current?->invalidate($model->created_at);
