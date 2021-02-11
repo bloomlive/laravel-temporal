@@ -15,10 +15,8 @@ class TemporalCurrentlyValidScope implements Scope
      * @param Model $model
      * @return void
      */
-    public function apply(Builder $builder, Model $model): void
+    public function apply(Builder $builder, Model $model)
     {
-        $builder
-            ->where($model->{$model->getValidFromTimeColumn()}, '<=', now())
-            ->where($model->{$model->getValidToTimeColumn()}, '>=', now());
+        $builder->where($model->getValidToTimeColumn(), '=', null);
     }
 }

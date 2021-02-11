@@ -3,39 +3,22 @@
 namespace Bloomlive\LaravelTemporal\Traits;
 
 use Bloomlive\LaravelTemporal\Exceptions\TemporalNotCurrentlyValidException;
-use Bloomlive\LaravelTemporal\Scopes\TemporalCurrentlyValidScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 trait IsTemporal
 {
-    protected function getValidFromTimeColumn()
-    {
-        return config('temporal.database.from_column');
-    }
+    abstract public function secondaryKey(): string;
 
-    protected function getValidToTimeColumn()
+    public function getValidToTimeColumn()
     {
         return config('temporal.database.to_column');
     }
 
-    public function getValidFromAttribute()
+    public function scopePast(Builder $query, Model $model): Builder
     {
-        return $this->{$this->getValidFromTimeColumn()};
-    }
-
-    public function getValidToAttribute()
-    {
-        return $this->{$this->getValidToTimeColumn()};
-    }
-
-    public function scopeFuture(Builder $query, Model $model): Builder {
-        return $query->where($model->valid_from, '>', now());
-    }
-
-    public function scopePast(Builder $query, Model $model): Builder {
-        return $query->where($model->valid_to, '<', now());
+        return $query->where($model->attributes[$this->getValidToTimeColumn()], '<', now());
     }
 
     public static function invalidated($callback)
@@ -50,37 +33,29 @@ trait IsTemporal
 
     public function isCurrentlyValid(): bool
     {
-        return ($this->{$this->getValidFromTimeColumn()} >= now() && $this->{$this->getValidToTimeColumn()} <= now());
+        return ($this->attributes[$this->getValidToTimeColumn()] <= now() || $this->attributes[$this->getValidToTimeColumn()] === null);
     }
 
-    public function invalidate(Carbon $from = null): bool {
-        if (!$from instanceof Carbon) {
-            $this->invalidateCurrent();
-        }
-
-        if ($this->fireModelEvent('invalidating') === false) {
-            return false;
-        }
-
-        $this->{$this->getValidToTimeColumn()} = $from;
-
-        $result = $this->save();
-
-        $this->fireModelEvent('invalidated', false);
-
-        return $result;
+    public function scopeWasValidAt(Builder $query, Carbon $timestamp) {
+        return $query
+            ->withoutGlobalScopes()
+            ->where($this->getValidToTimeColumn(), '>=', $timestamp)
+            ->orWhere($this->getValidToTimeColumn(), '=', null)
+            ->orderByDesc($this->getValidToTimeColumn())
+            ->limit(1);
     }
 
-    private function invalidateCurrent() {
+    public function invalidate(Carbon $since = null)
+    {
         if (!$this->isCurrentlyValid()) {
-            throw new TemporalNotCurrentlyValidException('');
+            throw new TemporalNotCurrentlyValidException();
         }
 
         if ($this->fireModelEvent('invalidating') === false) {
             return false;
         }
 
-        $this->{$this->getValidToTimeColumn()} = now();
+        $this->attributes[$this->getValidToTimeColumn()] = $since ?: \Illuminate\Support\Carbon::now();
 
         $result = $this->save();
 
@@ -92,8 +67,7 @@ trait IsTemporal
     public function mergeCasts($casts)
     {
         $this->casts = array_merge([
-            $this->getValidFromTimeColumn() => 'timestamp',
-            $this->getValidToTimeColumn() => 'timestamp',
+            $this->getValidToTimeColumn() => 'datetime',
         ], $casts);
 
         return $this;
@@ -101,7 +75,12 @@ trait IsTemporal
 
     public static function bootIsTemporal()
     {
-        static::addGlobalScope(TemporalCurrentlyValidScope::class);
-    }
+        static::addGlobalScope(new \Bloomlive\LaravelTemporal\Scopes\TemporalCurrentlyValidScope);
 
+        static::creating(function(self $model) {
+            $current = $model->where($model->secondaryKey(), '=', $model[$model->secondaryKey()])->first();
+
+            $current?->invalidate($model->created_at);
+        });
+    }
 }
