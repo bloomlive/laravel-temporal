@@ -39,15 +39,10 @@ trait IsTemporal
 
     public function scopeWasValidAt(Builder $query, Carbon $timestamp)
     {
-        return $query
-            ->withoutGlobalScopes()
-            ->where($this->getValidToTimeColumn(), '>=', $timestamp)
-            ->orWhere($this->getValidToTimeColumn(), '=', null)
-    public function scopeWasValidAt(Builder $query, Carbon $timestamp)
-    {
         return $query->withoutGlobalScope(TemporalCurrentlyValidScope::class)
             ->where(function ($query) use ($timestamp) {
                 $query->where($this->getValidToTimeColumn(), '>=', $timestamp)
+                    ->where($this->getCreatedAtColumn(), '<=', $timestamp)
                     ->orWhere($this->getValidToTimeColumn(), '=', null);
             })
             ->orderByDesc($this->getValidToTimeColumn())
