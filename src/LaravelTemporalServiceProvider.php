@@ -4,7 +4,6 @@ namespace Bloomlive\LaravelTemporal;
 
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\ServiceProvider;
-use Spatie\LaravelPackageTools\Package;
 
 class LaravelTemporalServiceProvider extends ServiceProvider
 {
@@ -18,7 +17,8 @@ class LaravelTemporalServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->mergeConfigFrom(
-            __DIR__.'/../config/temporal.php', 'temporal'
+            __DIR__.'/../config/temporal.php',
+            'temporal'
         );
 
         $this->publishes([
