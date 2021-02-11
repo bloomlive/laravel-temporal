@@ -3,6 +3,7 @@
 namespace Bloomlive\LaravelTemporal\Traits;
 
 use Bloomlive\LaravelTemporal\Exceptions\TemporalNotCurrentlyValidException;
+use Bloomlive\LaravelTemporal\Scopes\TemporalCurrentlyValidScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -36,11 +37,13 @@ trait IsTemporal
         return ($this->attributes[$this->getValidToTimeColumn()] <= now() || $this->attributes[$this->getValidToTimeColumn()] === null);
     }
 
-    public function scopeWasValidAt(Builder $query, Carbon $timestamp) {
-        return $query
-            ->withoutGlobalScopes()
-            ->where($this->getValidToTimeColumn(), '>=', $timestamp)
-            ->orWhere($this->getValidToTimeColumn(), '=', null)
+    public function scopeWasValidAt(Builder $query, Carbon $timestamp)
+    {
+        return $query->withoutGlobalScope(TemporalCurrentlyValidScope::class)
+            ->where(function ($query) use ($timestamp) {
+                $query->where($this->getValidToTimeColumn(), '>=', $timestamp)
+                    ->orWhere($this->getValidToTimeColumn(), '=', null);
+            })
             ->orderByDesc($this->getValidToTimeColumn())
             ->limit(1);
     }
