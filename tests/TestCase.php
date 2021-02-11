@@ -2,9 +2,9 @@
 
 namespace Bloomlive\LaravelTemporal\Tests;
 
+use Bloomlive\LaravelTemporal\LaravelTemporalServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Orchestra\Testbench\TestCase as Orchestra;
-use Bloomlive\LaravelTemporal\LaravelTemporalServiceProvider;
 
 class TestCase extends Orchestra
 {

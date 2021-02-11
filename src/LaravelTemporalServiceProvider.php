@@ -8,7 +8,8 @@ use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 class LaravelTemporalServiceProvider extends PackageServiceProvider
 {
-    public function register() {
+    public function register()
+    {
         Blueprint::macro('temporal', function ($fromColumn = null, $toColumn = null) {
             $this->timestamp($fromColumn ?: config('temporal.database.from_column'));
             $this->timestamp($toColumn ?: config('temporal.database.to_column'));

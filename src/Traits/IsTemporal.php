@@ -30,11 +30,13 @@ trait IsTemporal
         return $this->{$this->getValidToTimeColumn()};
     }
 
-    public function scopeFuture(Builder $query, Model $model): Builder {
+    public function scopeFuture(Builder $query, Model $model): Builder
+    {
         return $query->where($model->valid_from, '>', now());
     }
 
-    public function scopePast(Builder $query, Model $model): Builder {
+    public function scopePast(Builder $query, Model $model): Builder
+    {
         return $query->where($model->valid_to, '<', now());
     }
 
@@ -53,8 +55,9 @@ trait IsTemporal
         return ($this->{$this->getValidFromTimeColumn()} >= now() && $this->{$this->getValidToTimeColumn()} <= now());
     }
 
-    public function invalidate(Carbon $from = null): bool {
-        if (!$from instanceof Carbon) {
+    public function invalidate(Carbon $from = null): bool
+    {
+        if (! $from instanceof Carbon) {
             $this->invalidateCurrent();
         }
 
@@ -71,8 +74,9 @@ trait IsTemporal
         return $result;
     }
 
-    private function invalidateCurrent() {
-        if (!$this->isCurrentlyValid()) {
+    private function invalidateCurrent()
+    {
+        if (! $this->isCurrentlyValid()) {
             throw new TemporalNotCurrentlyValidException('');
         }
 
@@ -103,5 +107,4 @@ trait IsTemporal
     {
         static::addGlobalScope(TemporalCurrentlyValidScope::class);
     }
-
 }
